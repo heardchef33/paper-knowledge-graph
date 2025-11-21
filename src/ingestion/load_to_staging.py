@@ -39,11 +39,29 @@ def read_raw(spark, input_path):
 
     return df 
 
-def convert_to_parquet(spark, df, save_path):
+def create_partition_column(df): 
     """
-    partition data (research papers) by year and save them into parquet files 
-    """     
+    convert the update_date column to time stamp and extract the years
+    """
 
+    df_with_year = df.withColumn(
+        "pub_year",
+        F.year(F.col("versions")[0]["created"].cast("timestamp"))
+    )
+
+    return df_with_year
+
+def convert_to_parquet(df, save_path):
+    """
+    save the partitioned data frame into parquet files 
+    """   
+    print("Saving to parquet files ...")  
+
+    df.write.partitionBy("pub_year").mode("overwrite").parquet(save_path)
+
+    print("Saving successful!")
+
+def main():
     ...
 
 if __name__ == "__main__": 
