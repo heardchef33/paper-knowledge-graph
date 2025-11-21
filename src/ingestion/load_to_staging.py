@@ -62,15 +62,41 @@ def convert_to_parquet(df, save_path):
     print("Saving successful!")
 
 def main():
-    ...
-
-if __name__ == "__main__": 
+    """
+    main function for staging into parquet files
+    """
 
     RAW_PATH = '/Users/thananpornsethjinda/Desktop/rkg/data/raw/arxiv-metadata-oai-snapshot.json'
 
+    SAVE_PATH = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
+
     spark = create_spark_session()
 
-    read_raw(spark, RAW_PATH)
+    try: 
+
+        print("Starting initial loading and staging process ...")
+    
+        df = read_raw(spark, RAW_PATH)
+
+        df = create_partition_column(df)
+
+        convert_to_parquet(df, SAVE_PATH)
+
+        print("Staging completed successfully!")
+    
+    except Exception as e: 
+        
+        print(f"An unexpected error occurred: {e}")
+
+    finally: 
+
+        spark.stop()
+
+
+if __name__ == "__main__": 
+
+    main()
+
 
 
 
