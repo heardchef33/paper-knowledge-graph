@@ -25,6 +25,8 @@ def create_spark_session():
 
     spark = SparkSession.builder.config(conf=conf).getOrCreate()
 
+    spark.sparkContext.setLogLevel("WARN")
+
     return spark
 
 def read_raw(spark, input_path): 
@@ -37,6 +39,8 @@ def read_raw(spark, input_path):
 
     df.printSchema()
 
+    df.show(5)
+
     return df 
 
 def create_partition_column(df): 
@@ -44,10 +48,18 @@ def create_partition_column(df):
     convert the update_date column to time stamp and extract the years
     """
 
+    print("Partitioning ...")
+
+    first_version_date = F.col("versions")[0]["created"]
+
     df_with_year = df.withColumn(
         "pub_year",
-        F.year(F.col("versions")[0]["created"].cast("timestamp"))
+        F.regexp_extract(first_version_date, r'(\d{4})', 1).cast(T.IntegerType())
     )
+
+    print("Success!")
+
+    df_with_year.select("pub_year").show(5)
 
     return df_with_year
 
