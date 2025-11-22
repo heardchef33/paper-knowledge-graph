@@ -1,0 +1,77 @@
+from pyspark.sql import SparkSession, functions as F, types as T
+
+from pyspark import SparkConf
+
+from pathlib import Path
+
+import sys
+
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from config.spark_config import get_spark_config
+
+def create_spark_session(): # repeated for simplicity during development; will be removed later 
+    """
+    create spark session for development 
+    """
+    config = get_spark_config()
+
+    conf = SparkConf()
+
+    for con, settings in config.items(): 
+        conf.set(con, settings)
+
+    spark = SparkSession.builder.config(conf=conf).getOrCreate()
+
+    spark.sparkContext.setLogLevel("WARN")
+
+    return spark
+
+def miscalleneous_cleaning(spark, parquet_file_path):
+    """
+    dropping unnecessary columns and preparing 
+    author and categories for normalisation
+    """
+
+    print("Reading generated parquet files in parallel ...")
+
+    df = spark.read.parquet(parquet_file_path)
+
+    print("Data successfully read")
+
+    # drop irrelevant columnns
+
+    relevant_df = df.drop("authors", "comments", "doi", "license", "report-no", "update_date")
+
+    # proper parsing of categories
+
+    categories_column = F.col('categories')
+
+    cat_parsed = relevant_df.withColumn(
+        'categories', 
+        F.split(categories_column, " ")
+    )
+    cat_parsed.show()
+
+    # proper parsing of authors into a list of names
+
+    authors_parsed = cat_parsed.withColumn(
+        "authors_parsed_cleaned",
+        F.transform(
+            F.col("authors_parsed"),
+            lambda author_array: F.slice(author_array, 1, 2)
+            )
+        )
+
+    authors_parsed.select("authors_parsed_cleaned").show()
+
+    return authors_parsed
+
+if __name__ == "__main__": 
+
+    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
+
+    spark = create_spark_session()
+
+    miscalleneous_cleaning(spark, PARQUET_FOLDER)
