@@ -40,9 +40,9 @@ def miscalleneous_cleaning(spark, parquet_file_path):
 
     print("Data successfully read")
 
-    # drop irrelevant columnns
+    # drop irrelevant columnns (drooped version because we already have published year and submitter because people usually query authors)
 
-    relevant_df = df.drop("authors", "comments", "doi", "license", "report-no", "update_date")
+    relevant_df = df.drop("authors", "comments", "doi", "license", "report-no", "update_date", "versions", "submitter")
 
     # proper parsing of categories
 
@@ -62,9 +62,9 @@ def miscalleneous_cleaning(spark, parquet_file_path):
             F.col("authors_parsed"),
             lambda author_array: F.slice(author_array, 1, 2)
             )
-        )
+        ).drop("authors_parsed")
 
-    authors_parsed.select("authors_parsed_cleaned").show()
+    authors_parsed.show()
 
     return authors_parsed
 
