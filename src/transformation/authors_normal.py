@@ -17,6 +17,8 @@ from config.spark_config import get_spark_config
 
 from clean import miscalleneous_cleaning
 
+import hashlib
+
 def create_spark_session(): # repeated for simplicity during development; will be removed later 
     """
     create spark session for development 
@@ -42,16 +44,24 @@ def author_normalisation(df):
     print("Exploding ...")
 
     df_exploded = df.select(
-
-        F.explode(F.col("authors_parsed_cleaned")).alias("author_array")
-
+        F.explode(F.col("authors_parsed_cleaned")).alias("author_array"),
     )
 
-    df_exploded.show()
+    # df_exploded.show()
+
+    # print(df_exploded.count())
 
     print("Exploding complete")
 
-    df_final = df_exploded.select(
+    df_valid = df_exploded.filter(
+        (F.col("author_array").getItem(0) != '') & (F.col("author_array").getItem(1) != '') &
+        (F.col("author_array").getItem(0).rlike("[a-zA-Z]")) & (F.col("author_array").getItem(1).rlike("[a-zA-Z]"))
+    )
+    # df_valid.show()
+
+    # print(df_valid.count())
+
+    df_final = df_valid.select(
         F.col("author_array").getItem(0).alias("last_name"),
         F.col("author_array").getItem(1).alias("first_name")
     )
@@ -62,15 +72,17 @@ def author_normalisation(df):
             F.lit(" "),
             F.col("last_name")
         )
-    ).drop("first_name", "last_name")
-    
-    df_authors_final = df_authors.withColumn("id", F.monotonically_increasing_id())
+    ).drop("first_name", "last_name").distinct()
 
-    df_authors_final.show()
+    df_authors.show()
 
-    return df_authors
+    df_authors_final = df_authors.withColumn("author_id", F.md5(F.col("full_name")))
 
-def author_deduplication(): 
+    df_authors_final.show(truncate=False)
+
+    return df_authors_final
+
+def author_wrote(df):
     ...
 
 if __name__ == "__main__":
