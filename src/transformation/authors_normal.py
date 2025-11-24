@@ -72,17 +72,23 @@ def author_normalisation(df):
             F.lit(" "),
             F.col("last_name")
         )
+    ).withColumn("compared", 
+        F.regexp_replace(
+            "full_name",
+            r'^.*?([A-Z])',
+            r'$1'
+        )
     ).drop("first_name", "last_name").distinct()
 
-    df_authors.show()
-
     df_authors_final = df_authors.withColumn("author_id", F.md5(F.col("full_name")))
-
-    df_authors_final.show(truncate=False)
 
     return df_authors_final
 
 def author_wrote(df):
+    
+    """
+    get the author wrote joint table by joining author table? 
+    """ 
     ...
 
 if __name__ == "__main__":
@@ -93,7 +99,7 @@ if __name__ == "__main__":
 
     df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
     
-    author_normalisation(df)
+    author_wrote(df)
 
 
 
