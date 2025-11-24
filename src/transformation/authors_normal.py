@@ -89,7 +89,58 @@ def author_wrote(df):
     """
     get the author wrote joint table by joining author table? 
     """ 
-    ...
+    haha = author_normalisation(df)
+
+    # seems to be issues with wrong author names 
+
+    print("Exploding ...")
+
+    df_exploded = df.select(
+        "id",
+        "pub_year",
+        F.explode(F.col("authors_parsed_cleaned")).alias("author_array"),
+    )
+
+    # df_exploded.show()
+
+    # print(df_exploded.count())
+
+    print("Exploding complete")
+
+    df_valid = df_exploded.filter(
+        (F.col("author_array").getItem(0) != '') & (F.col("author_array").getItem(1) != '') &
+        (F.col("author_array").getItem(0).rlike("[a-zA-Z]")) & (F.col("author_array").getItem(1).rlike("[a-zA-Z]"))
+    )
+    # df_valid.show()
+
+    # print(df_valid.count())
+
+    df_final = df_valid.select(
+        "id",
+        "pub_year",
+        F.col("author_array").getItem(0).alias("last_name"),
+        F.col("author_array").getItem(1).alias("first_name")
+    )
+
+    df_authors = df_final.withColumn("full_name",
+        F.concat(
+            F.col("first_name"),
+            F.lit(" "),
+            F.col("last_name")
+        )
+    ).withColumn("compared", 
+        F.regexp_replace(
+            "full_name",
+            r'^.*?([A-Z])',
+            r'$1'
+        )
+    ).drop("first_name", "last_name").distinct()
+
+    final = df_authors.join(haha, on="full_name", how="inner")
+
+    final.show()
+
+    return final 
 
 if __name__ == "__main__":
 
