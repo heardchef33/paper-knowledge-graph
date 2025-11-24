@@ -89,6 +89,7 @@ def author_wrote(df):
     """
     get the author wrote joint table by joining author table? 
     """ 
+
     haha = author_normalisation(df)
 
     # seems to be issues with wrong author names 
@@ -141,6 +142,7 @@ def author_wrote(df):
     final.show()
 
     return final 
+    
 
 if __name__ == "__main__":
 
