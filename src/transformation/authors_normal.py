@@ -141,6 +141,8 @@ def author_wrote(df):
 
     final.show()
 
+    ## function okay for now: but it contains alot of repeats - optimisation needed 
+
     return final 
     
 
