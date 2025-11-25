@@ -1,37 +1,9 @@
 
-from pyspark.sql import SparkSession, functions as F, types as T
+from pyspark.sql import functions as F
 
-from pyspark import SparkConf
-
-from pathlib import Path
-
-import sys
-
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from config.spark_config import get_spark_config
+from config.spark_config import create_spark_session
 
 from clean import miscalleneous_cleaning
-
-import hashlib
-
-def create_spark_session(): # repeated for simplicity during development; will be removed later 
-    """
-    create spark session for development 
-    """
-    config = get_spark_config()
-
-    conf = SparkConf()
-
-    for con, settings in config.items(): 
-        conf.set(con, settings)
-
-    spark = SparkSession.builder.config(conf=conf).getOrCreate()
-
-    spark.sparkContext.setLogLevel("WARN")
-
-    return spark
 
 def categories_pairs(df):
     return df.select(

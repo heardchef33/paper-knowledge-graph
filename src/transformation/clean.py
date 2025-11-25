@@ -1,32 +1,8 @@
-from pyspark.sql import SparkSession, functions as F, types as T
+from pyspark.sql import functions as F
 
-from pyspark import SparkConf
+from config.spark_config import create_spark_session
 
-from pathlib import Path
-
-import sys
-
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from config.spark_config import get_spark_config
-
-def create_spark_session(): # repeated for simplicity during development; will be removed later 
-    """
-    create spark session for development 
-    """
-    config = get_spark_config()
-
-    conf = SparkConf()
-
-    for con, settings in config.items(): 
-        conf.set(con, settings)
-
-    spark = SparkSession.builder.config(conf=conf).getOrCreate()
-
-    spark.sparkContext.setLogLevel("WARN")
-
-    return spark
+from clean import miscalleneous_cleaning
 
 def miscalleneous_cleaning(spark, parquet_file_path):
     """
@@ -52,7 +28,6 @@ def miscalleneous_cleaning(spark, parquet_file_path):
         'categories', 
         F.split(categories_column, " ")
     )
-    cat_parsed.show()
 
     # proper parsing of authors into a list of names
 
