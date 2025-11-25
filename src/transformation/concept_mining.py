@@ -16,7 +16,7 @@ for each document
 
 # lets write this after lunch 
 
-from pyspark.ml.feature import Tokenizer, StopWordsRemover, CountVectorizer, IDF
+from pyspark.ml.feature import Tokenizer, StopWordsRemover, CountVectorizer, IDF, HashingTF
 from pyspark.sql import functions as F
 
 from config.spark_config import create_spark_session
@@ -26,11 +26,12 @@ def preprocess_token_abstract(df):
     """
     1. remove punctuation
     2. remove special characters 
-    3. remove symbols and stop words 
+    3. remove symbols and stop words (by tokenising)
     4. convert to lowercase 
     """
 
     inter = df.select(
+        F.col("id"),
         F.trim(F.lower(F.col("abstract"))).alias("inter_abstract")
     ).select(
         F.regexp_replace(
@@ -56,8 +57,25 @@ def preprocess_token_abstract(df):
     # do i remove numbers - yes
 
 
-def tf_idf(df): 
-    ...
+def tf_idf(abstract_processed_df): 
+    """
+    1. vectorisation (TF calculation)
+    2. IDF calculation
+    3. TF-IDF scoring 
+    """
+    print("finding tf-idf values ...")
+
+    cv = CountVectorizer(inputCol="processed_abstract", outputCol="vectors", vocabSize=10000)
+    cvModel = cv.fit(abstract_processed_df)
+    tf_df = cvModel.transform(abstract_processed_df)
+
+    idf = IDF(inputCol="vectors", outputCol="tf-idf")
+    idfModel = idf.fit(tf_df)
+    tf_idf_df = idfModel.transform(tf_df)
+    tf_idf_df.show()
+
+    return tf_idf_df, cvModel.vocabulary
+
 
 if __name__ == "__main__":
 
@@ -67,5 +85,7 @@ if __name__ == "__main__":
 
     haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
 
-    preprocess_token_abstract(haha)
+    lmao = preprocess_token_abstract(haha)
+
+    tf_idf(lmao)
 
