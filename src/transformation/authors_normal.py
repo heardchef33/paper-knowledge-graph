@@ -72,113 +72,33 @@ def extract_author_pairs(df):
 
 def author_normalisation(df): 
     """
+    take in the extrac author pair df 
     create a table with author id and all unique authors 
     1. remove duplicates 
     3. generate unique ids using md5 
     """
-
-    # take in the extrac author pair df 
-
     return df.select(
         "full_name_normalised"
     ).distinct().select(
         F.md5(F.col("full_name_normalised")).alias("author_id"),
         F.col("full_name_normalised")
-    ).show()
+    )
 
 
-    # df_exploded = df.select(
-    #     F.explode(F.col("authors_parsed_cleaned")).alias("author_array"),
-    # )
-
-    # print("Exploding complete")
-
-    # df_valid = df_exploded.filter(
-    #     (F.col("author_array").getItem(0) != '') & (F.col("author_array").getItem(1) != '') &
-    #     (F.col("author_array").getItem(0).rlike("[a-zA-Z]")) & (F.col("author_array").getItem(1).rlike("[a-zA-Z]"))
-    # )
-
-    # df_final = df_valid.select(
-    #     F.col("author_array").getItem(0).alias("last_name"),
-    #     F.col("author_array").getItem(1).alias("first_name")
-    # )
-
-    # df_authors = df_final.withColumn("full_name",
-    #     F.concat(
-    #         F.col("first_name"),
-    #         F.lit(" "),
-    #         F.col("last_name")
-    #     )
-    # ).withColumn("compared", 
-    #     F.regexp_replace(
-    #         "full_name",
-    #         r'^.*?([A-Z])',
-    #         r'$1'
-    #     )
-    # ).drop("first_name", "last_name").distinct()
-
-    # df_authors_final = df_authors.withColumn("author_id", F.md5(F.col("full_name")))
-
-    return df_authors_final
-
-def author_wrote(df, authors_df):
+def author_wrote(authors_pair_df, authors_df):
     
     """
     get the author wrote joint table by joining author table? 
     """ 
 
     # avoid calculating author normalisation again 
+    # simply join 
 
-    print("Exploding ...")
-
-    df_exploded = df.select(
-        "id",
-        "pub_year",
-        F.explode(F.col("authors_parsed_cleaned")).alias("author_array"),
-    )
-
-    # df_exploded.show()
-
-    # print(df_exploded.count())
-
-    print("Exploding complete")
-
-    df_valid = df_exploded.filter(
-        (F.col("author_array").getItem(0) != '') & (F.col("author_array").getItem(1) != '') &
-        (F.col("author_array").getItem(0).rlike("[a-zA-Z]")) & (F.col("author_array").getItem(1).rlike("[a-zA-Z]"))
-    )
-    # df_valid.show()
-
-    # print(df_valid.count())
-
-    df_final = df_valid.select(
-        "id",
-        "pub_year",
-        F.col("author_array").getItem(0).alias("last_name"),
-        F.col("author_array").getItem(1).alias("first_name")
-    )
-
-    df_authors = df_final.withColumn("full_name",
-        F.concat(
-            F.col("first_name"),
-            F.lit(" "),
-            F.col("last_name")
+    return authors_pair_df.join(
+        authors_df, 
+        on = "full_name_normalised",
+        how = "inner"
         )
-    ).withColumn("compared", 
-        F.regexp_replace(
-            "full_name",
-            r'^.*?([A-Z])',
-            r'$1'
-        )
-    ).drop("first_name", "last_name").distinct()
-
-    final = df_authors.join(authors_df, on="full_name", how="inner")
-
-    final.show()
-
-    ## function okay for now: but it contains alot of repeats - optimisation needed 
-
-    return final 
     
 
 if __name__ == "__main__":
@@ -189,9 +109,11 @@ if __name__ == "__main__":
 
     df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
     
-    haha = extract_author_pairs(df=df)
+    authors_pair_df = extract_author_pairs(df=df)
 
-    author_normalisation(haha)
+    authors_df = author_normalisation(authors_pair_df)
+
+    author_wrote(authors_pair_df=authors_pair_df, authors_df=authors_df)
 
 
 
