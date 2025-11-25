@@ -1,33 +1,6 @@
-from pyspark.sql import SparkSession, functions as F, types as T
+from pyspark.sql import functions as F, types as T
 
-from pyspark import SparkConf
-
-from pathlib import Path
-
-import sys
-
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from config.spark_config import get_spark_config
-
-
-def create_spark_session(): 
-    """
-    create spark session for development 
-    """
-    config = get_spark_config()
-
-    conf = SparkConf()
-
-    for con, settings in config.items(): 
-        conf.set(con, settings)
-
-    spark = SparkSession.builder.config(conf=conf).getOrCreate()
-
-    spark.sparkContext.setLogLevel("WARN")
-
-    return spark
+from config.spark_config import create_spark_session
 
 def read_raw(spark, input_path): 
     """
