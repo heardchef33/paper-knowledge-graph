@@ -2,8 +2,6 @@ from pyspark.sql import functions as F
 
 from config.spark_config import create_spark_session
 
-from clean import miscalleneous_cleaning
-
 def miscalleneous_cleaning(spark, parquet_file_path):
     """
     dropping unnecessary columns and preparing 
