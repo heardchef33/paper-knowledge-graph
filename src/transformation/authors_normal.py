@@ -36,6 +36,34 @@ def create_spark_session(): # repeated for simplicity during development; will b
 
     return spark
 
+def extract_author_pairs(df): 
+    """
+    helper function to prevent repeats and redundancy in both functions (allows us to remove duplicate logic)
+    1. explode all authors while retaining paper id and pub year (for checking)
+    2. first later of filtering of bad author recrods 
+    3. creating full_name column and apply 2nd level of filtering 
+    """
+    return df.select(
+        "id",
+        "pub_year",
+        F.explode(F.col("authors_parsed_cleaned")).alias("author_array"),
+    ).filter(
+        (F.col("author_array").getItem(0) != '') & (F.col("author_array").getItem(1) != '') &
+        (F.col("author_array").getItem(0).rlike("[a-zA-Z]")) & (F.col("author_array").getItem(1).rlike("[a-zA-Z]"))
+    ).select(
+        F.col("id").alias("paper_id"),
+        F.concat(
+            F.col("author_array").getItem(1),
+            F.lit(" "),
+            F.col("author_array").getItem(0)
+        ).alias("inter_full_name"), 
+        F.regexp_replace(
+            "inter_full_name",
+            r'^.*?([A-Z])',
+            r'$1'
+        ).alias("full_name")
+    ).show()
+
 def author_normalisation(df): 
     """
     create a table with author id and all unique authors 
@@ -84,15 +112,13 @@ def author_normalisation(df):
 
     return df_authors_final
 
-def author_wrote(df):
+def author_wrote(df, authors_df):
     
     """
     get the author wrote joint table by joining author table? 
     """ 
 
-    haha = author_normalisation(df)
-
-    # seems to be issues with wrong author names 
+    # avoid calculating author normalisation again 
 
     print("Exploding ...")
 
@@ -137,7 +163,7 @@ def author_wrote(df):
         )
     ).drop("first_name", "last_name").distinct()
 
-    final = df_authors.join(haha, on="full_name", how="inner")
+    final = df_authors.join(authors_df, on="full_name", how="inner")
 
     final.show()
 
@@ -154,7 +180,7 @@ if __name__ == "__main__":
 
     df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
     
-    author_wrote(df)
+    extract_author_pairs(df=df)
 
 
 
