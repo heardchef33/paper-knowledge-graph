@@ -17,10 +17,14 @@ for each document
 # lets write this after lunch 
 
 from pyspark.ml.feature import Tokenizer, StopWordsRemover, CountVectorizer, IDF, HashingTF
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F 
+from pyspark.sql import types as T
+
 
 from config.spark_config import create_spark_session
 from src.transformation.clean import miscalleneous_cleaning
+
+import pandas as pd
 
 def preprocess_token_abstract(df): 
     """
@@ -34,12 +38,13 @@ def preprocess_token_abstract(df):
         F.col("id"),
         F.trim(F.lower(F.col("abstract"))).alias("inter_abstract")
     ).select(
+        F.col("id").alias("paper_id"),
         F.regexp_replace(
             F.col("inter_abstract"), 
             r'[^a-zA-Z ]', 
             ''
         ).alias("inter_abstract")
-    )
+    ) # could be an error 
 
     tokenizer = Tokenizer(inputCol="inter_abstract", outputCol="abstract_tokenised")
 
@@ -48,7 +53,7 @@ def preprocess_token_abstract(df):
         outputCol="processed_abstract"
     )
 
-    cleaned = (remover.transform(tokenizer.transform(inter))).select(F.col("processed_abstract"))
+    cleaned = (remover.transform(tokenizer.transform(inter))).select(F.col("paper_id"), F.col("processed_abstract"))
 
     cleaned.show()
 
@@ -67,25 +72,123 @@ def tf_idf(abstract_processed_df):
 
     cv = CountVectorizer(inputCol="processed_abstract", outputCol="vectors", vocabSize=10000)
     cvModel = cv.fit(abstract_processed_df)
+
     tf_df = cvModel.transform(abstract_processed_df)
 
-    idf = IDF(inputCol="vectors", outputCol="tf-idf")
+    idf = IDF(inputCol="vectors", outputCol="tf_idf_vec")
     idfModel = idf.fit(tf_df)
     tf_idf_df = idfModel.transform(tf_df)
-    tf_idf_df.show()
 
     return tf_idf_df, cvModel.vocabulary
+
+def top_n_concepts(tfidf_df, vocabulary, top_n=10):
+    """
+    extract top n concepts for each paper
+    """
+    def get_top_indices(vector, n=top_n):
+        if vector is None:
+            return []
+        indices_scores = [(i, float(vector[int(i)])) for i in vector.indices]
+        top = sorted(indices_scores, key=lambda x: x[1], reverse=True)[:n]
+        return [(int(idx), score) for idx, score in top]
+    
+    top_udf = F.udf(get_top_indices, T.ArrayType(T.StructType([
+        T.StructField("term_idx", T.IntegerType()),
+        T.StructField("score", T.DoubleType())
+    ])))
+    
+    with_top = tfidf_df.withColumn("top_concepts", top_udf(F.col("tf_idf_vec")))
+
+    with_top.show()
+    
+    exploded = with_top.select(
+        "paper_id",
+        F.explode("top_concepts").alias("concept_data")
+    ).select(
+        "paper_id",
+        F.col("concept_data.term_idx").alias("term_idx"),
+        F.col("concept_data.score").alias("tfidf_score")
+    )
+
+    exploded.show()
+    
+    vocab_broadcast = spark.sparkContext.broadcast(vocabulary)
+    
+    def idx_to_word(idx):
+        return vocab_broadcast.value[idx] if idx < len(vocab_broadcast.value) else None
+    
+    word_udf = F.udf(idx_to_word, T.StringType())
+
+    exploded.withColumn("concept", word_udf(F.col("term_idx"))).select(
+        "paper_id", "concept", "tfidf_score"
+    ).show()
+    
+    return exploded.withColumn("concept", word_udf(F.col("term_idx"))).select(
+        "paper_id", "concept", "tfidf_score"
+    )
+
+def create_concept_tables(has_concept_df):
+    """
+    Split into node and relationship tables.
+    """
+    # for (nodes)
+    concepts_df = has_concept_df.select("concept").distinct().withColumn(
+        "concept_id", F.md5(F.col("concept"))
+    )
+    
+    # creating relationships (with IDs)
+    relationships_df = has_concept_df.join(
+        concepts_df, on="concept", how="inner"
+    ).select("paper_id", "concept_id", "tfidf_score")
+    
+    return concepts_df, relationships_df
 
 
 if __name__ == "__main__":
 
-    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
+    # import numpy as np
+
+    # PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
+
+    # spark = create_spark_session()
+
+    # haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
+
+    # lmao = preprocess_token_abstract(haha)
+
+    # tfidf_df, vocabulary = tf_idf(lmao)
+
+    # with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
+
+    # print("n_concepts success")
+
+    # cdf, rdf = create_concept_tables(with_concepts)
+
+    # print("concept success")
+
+    # cdf.show()
+
+    # rdf.show()
+
+    import numpy as np
 
     spark = create_spark_session()
 
-    haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
+    tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
 
-    lmao = preprocess_token_abstract(haha)
+    print("complete!")
 
-    tf_idf(lmao)
+    v = pd.read_csv('/Users/thananpornsethjinda/Desktop/rkg/data/vocab_inspection/vocab.csv', index_col=False)
+
+    vocabulary = np.array(v['0'].dropna())
+
+    with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
+
+    cdf, rdf = create_concept_tables(with_concepts)
+
+    print("complete sucess")
+
+    cdf.show()
+
+    rdf.show()
 
