@@ -12,7 +12,11 @@ def get_spark_config():
         "spark.executor.memory":"3g",
         "spark.sql.shuffle.partitions":"8",
         "spark.default.parallelism":"16", 
-        "spark.driver.maxResultSize": "2g"
+        "spark.driver.maxResultSize": "2g",
+        "spark.jars.packages": "org.neo4j:neo4j-connector-apache-spark_2.12:5.3.0_for_spark_3",
+        "neo4j.url": "bolt://localhost:7687",
+        "neo4j.authentication.basic.username": "neo4j",
+        "neo4j.authentication.basic.password": "your_password"
     }
 
 def create_spark_session(): # repeated for simplicity during development; will be removed later 
