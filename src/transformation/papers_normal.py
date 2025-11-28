@@ -23,17 +23,14 @@ def paper_normalisation(spark, df, embedding_filepath):
                       on="id",
                       how="inner")
 
-def normalize_papers(df):
-    """
-    Simplified paper normalization without embeddings for faster loading
-    Use this for bulk loading, then update with embeddings later
-    """
+def normalise_papers(df):
+    
     return df.select(
         F.col("id"),
         F.col("abstract"),
         F.col("title"),
         F.col("pub_year")
-    ).dropDuplicates().dropna(subset=["id"])
+    )
 
 if __name__ == "__main__": 
 
