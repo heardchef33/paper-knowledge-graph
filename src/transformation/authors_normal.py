@@ -4,10 +4,6 @@
 
 from pyspark.sql import functions as F
 
-from config.spark_config import create_spark_session
-
-from clean import miscalleneous_cleaning
-
 def extract_author_pairs(df): 
     """
     helper function to prevent repeats and redundancy in both functions (allows us to remove duplicate logic)
@@ -74,6 +70,12 @@ def author_wrote(authors_pair_df, authors_df):
     
 
 if __name__ == "__main__":
+
+    from clean import miscalleneous_cleaning
+
+    from config.spark_config import create_spark_session
+
+
 
     PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
 
