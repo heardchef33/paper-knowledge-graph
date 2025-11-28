@@ -1,8 +1,5 @@
 # normalise drop unnecessary columns and join the table with embeddings 
-
-from config.spark_config import create_spark_session
 from pyspark.sql import functions as F
-from clean import miscalleneous_cleaning
 
 def paper_normalisation(spark, df, embedding_filepath): 
     """
@@ -26,7 +23,23 @@ def paper_normalisation(spark, df, embedding_filepath):
                       on="id",
                       how="inner")
 
+def normalize_papers(df):
+    """
+    Simplified paper normalization without embeddings for faster loading
+    Use this for bulk loading, then update with embeddings later
+    """
+    return df.select(
+        F.col("id"),
+        F.col("abstract"),
+        F.col("title"),
+        F.col("pub_year")
+    ).dropDuplicates().dropna(subset=["id"])
+
 if __name__ == "__main__": 
+
+    from config.spark_config import create_spark_session
+
+    from clean import miscalleneous_cleaning
 
     spark = create_spark_session()
 
