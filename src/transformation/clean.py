@@ -39,7 +39,15 @@ def miscalleneous_cleaning(spark, parquet_file_path):
 
     authors_parsed.show()
 
-    return authors_parsed
+    return authors_parsed.dropDuplicates(["id"]).dropna(subset=['id'])
+
+def category_mappings(spark, json1_file_path):
+
+    print("Reading category mappings")
+
+    df = spark.read.json(json1_file_path)
+
+    return df
 
 if __name__ == "__main__": 
 
