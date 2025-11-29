@@ -18,6 +18,7 @@ for each document
 
 from pyspark.ml.feature import Tokenizer, StopWordsRemover, CountVectorizer, IDF, HashingTF
 from pyspark.sql import functions as F 
+from pyspark.sql.functions import pandas_udf
 from pyspark.sql import types as T
 
 
@@ -25,6 +26,7 @@ from config.spark_config import create_spark_session
 from src.transformation.clean import miscalleneous_cleaning
 
 import pandas as pd
+import nltk
 
 def preprocess_token_abstract(df): 
     """
@@ -35,16 +37,15 @@ def preprocess_token_abstract(df):
     """
 
     inter = df.select(
-        F.col("id"),
-        F.trim(F.lower(F.col("abstract"))).alias("inter_abstract")
-    ).select(
-        F.col("id").alias("paper_id"),
+    F.col("id").alias("paper_id"),
+    F.trim(
         F.regexp_replace(
-            F.col("inter_abstract"), 
-            r'[^a-zA-Z ]', 
-            ''
-        ).alias("inter_abstract")
-    ) # could be an error 
+            F.lower(F.col("abstract")),
+            r'[\n\r]+|[^a-zA-Z ]',
+            ' '
+        )
+    ).alias("inter_abstract")
+    )
 
     tokenizer = Tokenizer(inputCol="inter_abstract", outputCol="abstract_tokenised")
 
@@ -55,11 +56,27 @@ def preprocess_token_abstract(df):
 
     cleaned = (remover.transform(tokenizer.transform(inter))).select(F.col("paper_id"), F.col("processed_abstract"))
 
-    cleaned.show()
+    final = cleaned.withColumn(
+        "processed_abstract",
+        F.expr("filter(processed_abstract, x -> length(x) > 1)")
+    )
 
-    return cleaned
+    final.show()
+
+    return final
 
     # do i remove numbers - yes
+
+# @pandas_udf('array<string>')
+# def noun_extraction(texts):
+#     """
+#     keep only nouns (for better concept creation)
+#     """
+#     def get_nouns(text):
+#         tagged = nltk.pos_tag(text)
+#         return [word for word, pos in tagged if pos.startswith('NN')]
+    
+#     return texts.apply(get_nouns)
 
 
 def tf_idf(abstract_processed_df): 
@@ -129,14 +146,14 @@ def top_n_concepts(tfidf_df, vocabulary, top_n=10):
 
 def create_concept_tables(has_concept_df):
     """
-    Split into node and relationship tables.
+    split into node and relationship tables.
     """
     # for (nodes)
     concepts_df = has_concept_df.select("concept").distinct().withColumn(
         "concept_id", F.md5(F.col("concept"))
     )
     
-    # creating relationships (with IDs)
+    # creating relationships (with id)
     relationships_df = has_concept_df.join(
         concepts_df, on="concept", how="inner"
     ).select("paper_id", "concept_id", "tfidf_score")
@@ -146,17 +163,51 @@ def create_concept_tables(has_concept_df):
 
 if __name__ == "__main__":
 
-    # import numpy as np
+    """
+    testing functions
+    """
 
-    # PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
+    import numpy as np
 
-    # spark = create_spark_session()
+    # nltk.download('averaged_perceptron_tagger_eng')
+    # nltk.download('punkt')
 
-    # haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
+    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
 
-    # lmao = preprocess_token_abstract(haha)
+    spark = create_spark_session()
 
-    # tfidf_df, vocabulary = tf_idf(lmao)
+    # @pandas_udf('array<string>')
+    # def noun_extraction(texts):
+    #     """
+    #     keep only nouns (for better concept creation)
+    #     """
+    #     def get_nouns(text):
+    #         tagged = nltk.pos_tag(text)
+    #         return [word for word, pos in tagged if pos.startswith('NN')]
+        
+    #     return texts.apply(get_nouns)
+
+
+    # # tfidf_df, vocabulary = tf_idf(lmao)
+
+    # tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
+
+    # result = tfidf_df.withColumn(
+    #     "nouns",
+    #     noun_extraction(F.col("processed_abstract"))
+    # )
+
+    # result.select("processed_abstract", "nouns").show(5, truncate=False)
+
+    haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
+
+    lmao = preprocess_token_abstract(haha)
+
+
+
+
+
+
 
     # with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
 
@@ -170,25 +221,28 @@ if __name__ == "__main__":
 
     # rdf.show()
 
-    import numpy as np
+    # import numpy as np
 
-    spark = create_spark_session()
+    # spark = create_spark_session()
 
-    tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
+    # tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
 
-    print("complete!")
+    # print("complete!")
 
-    v = pd.read_csv('/Users/thananpornsethjinda/Desktop/rkg/data/vocab_inspection/vocab.csv', index_col=False)
+    # v = pd.read_csv('/Users/thananpornsethjinda/Desktop/rkg/data/vocab_inspection/vocab.csv', index_col=False)
 
-    vocabulary = np.array(v['0'].dropna())
+    # vocabulary = np.array(v['0'].dropna())
 
-    with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
+    # with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
 
-    cdf, rdf = create_concept_tables(with_concepts)
+    # cdf, rdf = create_concept_tables(with_concepts)
 
-    print("complete sucess")
+    # print("complete sucess")
 
-    cdf.show()
+    # cdf.show()
 
-    rdf.show()
+    # rdf.show()
 
+"""
+
+"""
