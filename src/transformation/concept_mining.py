@@ -65,18 +65,27 @@ def preprocess_token_abstract(df):
 
     return final
 
-    # do i remove numbers - yes
+def extraction_nouns(df): 
 
-# @pandas_udf('array<string>')
-# def noun_extraction(texts):
-#     """
-#     keep only nouns (for better concept creation)
-#     """
-#     def get_nouns(text):
-#         tagged = nltk.pos_tag(text)
-#         return [word for word, pos in tagged if pos.startswith('NN')]
-    
-#     return texts.apply(get_nouns)
+    @pandas_udf('array<string>')
+    def noun_extraction(texts):
+        """
+        keep only nouns (for better concept creation)
+        """
+        def get_nouns(text):
+            tagged = nltk.pos_tag(text)
+            return [word for word, pos in tagged if pos.startswith('NN')]
+        
+        return texts.apply(get_nouns)
+
+    result = df.withColumn(
+        "nouns",
+        noun_extraction(F.col("processed_abstract"))
+    )
+
+    result.select("processed_abstract", "nouns").show(5, truncate=False)
+
+    return result
 
 
 def tf_idf(abstract_processed_df): 
@@ -176,38 +185,17 @@ if __name__ == "__main__":
 
     spark = create_spark_session()
 
-    # @pandas_udf('array<string>')
-    # def noun_extraction(texts):
-    #     """
-    #     keep only nouns (for better concept creation)
-    #     """
-    #     def get_nouns(text):
-    #         tagged = nltk.pos_tag(text)
-    #         return [word for word, pos in tagged if pos.startswith('NN')]
-        
-    #     return texts.apply(get_nouns)
+
+    # tfidf_df, vocabulary = tf_idf(lmao)
+
+    tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
+
+    extraction_nouns(tfidf_df)
 
 
-    # # tfidf_df, vocabulary = tf_idf(lmao)
+    # haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
 
-    # tfidf_df = spark.read.parquet('/Users/thananpornsethjinda/Desktop/rkg/data/concept_inspection')
-
-    # result = tfidf_df.withColumn(
-    #     "nouns",
-    #     noun_extraction(F.col("processed_abstract"))
-    # )
-
-    # result.select("processed_abstract", "nouns").show(5, truncate=False)
-
-    haha = miscalleneous_cleaning(spark, PARQUET_FOLDER)
-
-    lmao = preprocess_token_abstract(haha)
-
-
-
-
-
-
+    # lmao = preprocess_token_abstract(haha)
 
     # with_concepts = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary)
 
