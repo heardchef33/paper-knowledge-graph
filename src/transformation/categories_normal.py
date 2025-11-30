@@ -1,7 +1,4 @@
-
 from pyspark.sql import functions as F
-
-from config.spark_config import create_spark_session
 
 def categories_pairs(df):
     return df.select(
@@ -27,17 +24,3 @@ def category_in_paper(category_pair_df, category_normal_df):
     ).select("id", "category_id")  
 
 
-if __name__ == "__main__":
-    ...
-
-    # PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
-
-    # spark = create_spark_session()
-
-    # df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
-    
-    # haha = categories_pairs(df)
-
-    # normal = category_normalisation(haha)
-
-    # category_in_paper(haha, normal)
