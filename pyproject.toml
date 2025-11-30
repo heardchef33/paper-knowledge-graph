@@ -11,7 +11,6 @@ dependencies = [
     "pyspark (>=4.0.1,<5.0.0)",
     "numpy (>=2.3.5,<3.0.0)",
     "pandas (>=2.3.3,<3.0.0)",
-    "sentence-transformers (>=5.1.2,<6.0.0)",
     "neo4j (>=6.0.3,<7.0.0)",
     "graphdatascience (>=1.17,<2.0)",
     "nltk (>=3.9.2,<4.0.0)",
