@@ -1,8 +1,10 @@
 # full pipeline
+import subprocess
+
 from pyspark.sql import functions as F
 from config.spark_config import create_spark_session
 
-from src.transformation.clean import miscalleneous_cleaning, category_mappings
+from src.transformation.clean import miscalleneous_cleaning_full_pipeline, category_mappings
 from src.transformation.papers_normal import normalise_papers
 from src.transformation.authors_normal import extract_author_pairs, author_normalisation, author_wrote
 from src.transformation.categories_normal import categories_pairs, category_normalisation, category_in_paper
@@ -19,7 +21,7 @@ def main():
     3. convert all relevant dataframes to csv 
     4. run bash import script 
     """
-    parquet_path = "/Users/thananpornsethjinda/Desktop/rkg/data/staging"
+    json_data_path = "/Users/thananpornsethjinda/Desktop/rkg/data/raw/arxiv-metadata-oai-snapshot.json"
     jsonl_path = "/Users/thananpornsethjinda/Desktop/rkg/data/raw/arxiv-categories.jsonl"
     output_dir = "/Users/thananpornsethjinda/Desktop/rkg/data/neo4j_import"
     
@@ -27,10 +29,12 @@ def main():
     print()
 
     spark = create_spark_session()
+
+    # read json file and convert to parquet 
     
     #1
     print("step 1: clean raw data...")
-    cleaned_df = miscalleneous_cleaning(spark, parquet_path)
+    cleaned_df = miscalleneous_cleaning_full_pipeline(spark, json_data_path)
     print("cleaning done successfully!")
     
     #2
@@ -91,6 +95,7 @@ def main():
     #7 
     print("step 7: run bash import script")
     ## to write bash import script 
+
 
 
 if __name__ == "__main__":
