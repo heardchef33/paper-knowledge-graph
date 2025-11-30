@@ -95,6 +95,7 @@ def main():
     #7 
     print("step 7: run bash import script")
     ## to write bash import script 
+    subprocess.run(["sh", "/Users/thananpornsethjinda/Desktop/rkg/src/loading/bulk_import.sh"])
 
 
 
