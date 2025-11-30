@@ -1,26 +1,26 @@
-#!bin/bash
+#!/bin/bash
 
 echo "starting bulk csv load into neo4j"
-DATA_DIR = /Users/thananpornsethjinda/Desktop/rkg/data/neo4j_import 
-NEO4J_DATA_DIR = $HOME/neo4j/data
-NEO4J_IMPORT_DIR = $HOME/neo4j/import 
+DATA_DIR=/Users/thananpornsethjinda/Desktop/rkg/data/neo4j_import 
+NEO4J_DATA_DIR=$HOME/neo4j/data
+NEO4J_IMPORT_DIR=$HOME/neo4j/import 
 
 echo "stop database"
 docker compose down 
 echo "database stopped"
 
 echo "deleting old database files"
-rm -rf $NEO4J_DATA_DIR/databases/neo4j
+rm -rf "$NEO4J_DATA_DIR/databases/neo4j"
 echo "old database files deleted"
 
 echo "copying all files to neo4j import directory"
-cp $DATA_DIR/papers/part-*.csv $NEO4J_IMPORT_DIR/papers.csv
-cp $DATA_DIR/authors/part-*.csv $NEO4J_IMPORT_DIR/authors.csv
-cp $DATA_DIR/categories/part-*.csv $NEO4J_IMPORT_DIR/categories.csv
-cp $DATA_DIR/concepts/part-*.csv $NEO4J_IMPORT_DIR/concepts.csv
-cp $DATA_DIR/wrote/part-*.csv $NEO4J_IMPORT_DIR/wrote.csv
-cp $DATA_DIR/contains/part-*.csv $NEO4J_IMPORT_DIR/contains.csv
-cp $DATA_DIR/has_concept/part-*.csv $NEO4J_IMPORT_DIR/has_concept.csv
+cp "$DATA_DIR/papers/part-"*.csv "$NEO4J_IMPORT_DIR/papers.csv"
+cp "$DATA_DIR/authors/part-"*.csv "$NEO4J_IMPORT_DIR/authors.csv"
+cp "$DATA_DIR/categories/part-"*.csv "$NEO4J_IMPORT_DIR/categories.csv"
+cp "$DATA_DIR/concepts/part-"*.csv "$NEO4J_IMPORT_DIR/concepts.csv"
+cp "$DATA_DIR/wrote/part-"*.csv "$NEO4J_IMPORT_DIR/wrote.csv"
+cp "$DATA_DIR/contains/part-"*.csv "$NEO4J_IMPORT_DIR/contains.csv"
+cp "$DATA_DIR/has_concept/part-"*.csv "$NEO4J_IMPORT_DIR/has_concept.csv"
 echo "done copying files"
 
 echo "run docker command" 
