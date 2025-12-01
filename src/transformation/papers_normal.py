@@ -32,21 +32,5 @@ def normalise_papers(df):
         F.col("pub_year")
     )
 
-if __name__ == "__main__": 
-
-    from config.spark_config import create_spark_session
-
-    from clean import miscalleneous_cleaning
-
-    spark = create_spark_session()
-
-    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
-
-    df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
-
-    EMBEDDING_FILEPATH = '/Users/thananpornsethjinda/Desktop/rkg/data/embeddings'
-
-    paper_normalisation(spark=spark, df=df, embedding_filepath=EMBEDDING_FILEPATH)
-
 
 

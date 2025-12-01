@@ -67,27 +67,7 @@ def author_wrote(authors_pair_df, authors_df):
         on = "full_name_normalised",
         how = "inner"
         )
-    
 
-if __name__ == "__main__":
-
-    from clean import miscalleneous_cleaning
-
-    from config.spark_config import create_spark_session
-
-
-
-    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
-
-    spark = create_spark_session()
-
-    df = miscalleneous_cleaning(spark, PARQUET_FOLDER)
-    
-    authors_pair_df = extract_author_pairs(df=df)
-
-    authors_df = author_normalisation(authors_pair_df)
-
-    author_wrote(authors_pair_df=authors_pair_df, authors_df=authors_df)
 
 
 
