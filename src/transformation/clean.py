@@ -94,11 +94,3 @@ def category_mappings(spark, json1_file_path):
     df = spark.read.json(json1_file_path)
 
     return df
-
-if __name__ == "__main__": 
-
-    PARQUET_FOLDER = '/Users/thananpornsethjinda/Desktop/rkg/data/staging'
-
-    spark = create_spark_session()
-
-    miscalleneous_cleaning(spark, PARQUET_FOLDER)
