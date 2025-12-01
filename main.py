@@ -72,7 +72,7 @@ def main():
     tfidf_df, vocabulary = tf_idf(processed_abstracts_df)
     print("calculated TF-IDF scores")
     
-    with_concepts_df = top_n_concepts(tfidf_df=tfidf_df, vocabulary=vocabulary, top_n=10)
+    with_concepts_df = top_n_concepts(spark, tfidf_df=tfidf_df, vocabulary=vocabulary, top_n=10)
     print("paper concept pairs generated successfully!")
     
     concepts_df, has_concept_df = create_concept_tables(with_concepts_df)
@@ -98,9 +98,13 @@ def main():
     subprocess.run(["sh", "/Users/thananpornsethjinda/Desktop/rkg/src/loading/bulk_import.sh"])
 
 
-
 if __name__ == "__main__":
+    
+    import time
+    start = time.time()
     main()
+    elapsed = time.time() - start
+    print(f"Completed in {elapsed}")
 
     
     
